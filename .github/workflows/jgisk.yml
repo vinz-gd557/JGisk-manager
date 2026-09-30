@@ -1,0 +1,54 @@
+name: Build JGisk
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+jobs:
+  lkm:
+    uses: ./.github/workflows/build-lkm.yml
+  ksuinit:
+    uses: ./.github/workflows/ksuinit.yml
+  ksud:
+    needs: [lkm, ksuinit]
+    uses: ./.github/workflows/ksud.yml
+    with:
+      target: aarch64-linux-android
+      pack_lkm: true
+      pack_ksuinit: true
+  manager:
+    needs: [ksud]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: actions/download-artifact@v8
+        with: { name: ksud-aarch64-linux-android, path: ksud-bin }
+      - name: Taruh ksud sebagai libksud.so
+        run: |
+          mkdir -p manager/app/src/main/jniLibs/arm64-v8a
+          cp ksud-bin/ksud manager/app/src/main/jniLibs/arm64-v8a/libksud.so
+      - name: Signing (keystore JGisk)
+        run: |
+          cp jgisk.jks manager/jgisk.jks
+          {
+            echo KEYSTORE_FILE=jgisk.jks
+            echo KEYSTORE_PASSWORD=jgisk-change-me
+            echo KEY_ALIAS=jgisk
+            echo KEY_PASSWORD=jgisk-change-me
+          } >> manager/gradle.properties
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: 21 }
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build APK
+        working-directory: manager
+        run: ./gradlew assembleRelease
+      - uses: actions/upload-artifact@v7
+        with:
+          name: JGisk-manager-apk
+          path: manager/app/build/outputs/apk/release/*.apk
+      - uses: actions/download-artifact@v8
+        with: { name: aarch64-android15-6.6-lkm, path: lkm }
+      - uses: actions/upload-artifact@v7
+        with:
+          name: JGisk-kernelsu-ko
+          path: lkm/*.ko
