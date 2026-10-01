@@ -1,0 +1,11 @@
+[
+  {
+    "id": "contoh_module",
+    "name": "Contoh Module",
+    "version": "1.0",
+    "versionCode": 1,
+    "author": "vinz-gd557",
+    "description": "Ganti entri ini dengan module kamu sendiri. zipUrl harus link langsung ke file .zip (misal dari GitHub Releases).",
+    "zipUrl": "https://github.com/vinz-gd557/JGisk/releases/download/modul/contoh.zip"
+  }
+]
